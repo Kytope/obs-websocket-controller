@@ -1,6 +1,6 @@
 import { Rnd } from 'react-rnd';
 import type { MediaElement } from '../types';
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 
 interface Props {
   elements: MediaElement[];
@@ -15,6 +15,18 @@ export const CanvasArea = ({ elements, onUpdate, onSelect, selectedId }: Props) 
 
   // Referencia para controlar la frecuencia de envío (Throttling)
   const lastUpdateRef = useRef<number>(0);
+
+  // Guardar el elemento que se está arrastrando
+  const [draggingElement, setDraggingElement] = useState<MediaElement | null>(null);
+
+  // Combinar elementos del servidor con el elemento que se está arrastrando
+  const displayElements = useMemo(() => {
+    if (!draggingElement) return elements;
+
+    return elements.map(el =>
+      el.id === draggingElement.id ? draggingElement : el
+    );
+  }, [elements, draggingElement]);
 
   // Calcular escala para ajustar el 1920x1080 al espacio disponible
   useEffect(() => {
@@ -44,13 +56,25 @@ export const CanvasArea = ({ elements, onUpdate, onSelect, selectedId }: Props) 
       return;
     }
 
-    const updated = elements.map(el =>
+    const updated = displayElements.map(el =>
       el.id === id ? { ...el, position: { x: d.x, y: d.y } } : el
     );
 
+    // Actualizar el elemento que se está arrastrando
+    const draggedEl = updated.find(el => el.id === id);
+    if (draggedEl && !isFinal) {
+      setDraggingElement(draggedEl);
+    }
+
+    // Enviar al servidor
     onUpdate(updated);
     lastUpdateRef.current = now;
-  }, [elements, onUpdate]);
+
+    // Si es el evento final, liberar el lock
+    if (isFinal) {
+      setDraggingElement(null);
+    }
+  }, [displayElements, onUpdate]);
 
   // --- LÓGICA DE REDIMENSIONADO DE ELEMENTOS EN TIEMPO REAL ---
 
@@ -60,7 +84,7 @@ export const CanvasArea = ({ elements, onUpdate, onSelect, selectedId }: Props) 
       return;
     }
 
-    const updated = elements.map(el =>
+    const updated = displayElements.map(el =>
       el.id === id ? {
         ...el,
         size: { width: ref.offsetWidth, height: ref.offsetHeight },
@@ -68,12 +92,23 @@ export const CanvasArea = ({ elements, onUpdate, onSelect, selectedId }: Props) 
       } : el
     );
 
+    // Actualizar el elemento que se está redimensionando
+    const resizedEl = updated.find(el => el.id === id);
+    if (resizedEl && !isFinal) {
+      setDraggingElement(resizedEl);
+    }
+
+    // Enviar al servidor
     onUpdate(updated);
     lastUpdateRef.current = now;
-  }, [elements, onUpdate]);
+
+    // Si es el evento final, liberar el lock
+    if (isFinal) {
+      setDraggingElement(null);
+    }
+  }, [displayElements, onUpdate]);
 
   return (
-    // CAMBIO 1: Quitamos overflow-hidden aquí para ver los elementos fuera
     <div className="w-full h-full flex items-center justify-center bg-gray-950/50 relative overflow-hidden" ref={containerRef}>
 
       {/* WRAPPER ESCALADO */}
@@ -113,7 +148,7 @@ export const CanvasArea = ({ elements, onUpdate, onSelect, selectedId }: Props) 
 
 
         {/* ELEMENTOS */}
-        {elements.map(el => {
+        {displayElements.map(el => {
             return (
                 <Rnd
                     key={el.id}
@@ -121,16 +156,23 @@ export const CanvasArea = ({ elements, onUpdate, onSelect, selectedId }: Props) 
                     position={{ x: el.position.x, y: el.position.y }}
                     scale={scale}
 
-                    // CAMBIO 2: bounds={undefined} permite arrastrar fuera de la caja padre
                     bounds={undefined}
 
                     // EVENTOS DE DRAG (MOVIMIENTO)
-                    onDragStart={() => onSelect(el.id)}
+                    onDragStart={() => {
+                      const element = elements.find(e => e.id === el.id);
+                      if (element) setDraggingElement(element);
+                      onSelect(el.id);
+                    }}
                     onDrag={(_e, d) => handleDrag(el.id, d, false)} // Movimiento continuo con throttling
                     onDragStop={(_e, d) => handleDrag(el.id, d, true)} // Posición final exacta
 
                     // EVENTOS DE RESIZE (TAMAÑO)
-                    onResizeStart={() => onSelect(el.id)}
+                    onResizeStart={() => {
+                      const element = elements.find(e => e.id === el.id);
+                      if (element) setDraggingElement(element);
+                      onSelect(el.id);
+                    }}
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     onResize={(_e: any, _dir: any, ref: HTMLElement, _delta: any, position: { x: number; y: number }) =>
                       handleElementResize(el.id, ref, position, false)
@@ -205,7 +247,7 @@ const VideoRenderer = ({ element }: { element: MediaElement }) => {
 
       if (element.videoProps?.playing) {
         videoRef.current.play().catch(e => console.log("Autoplay prevent", e));
-      } else {
+   } else {
         videoRef.current.pause();
       }
     }
