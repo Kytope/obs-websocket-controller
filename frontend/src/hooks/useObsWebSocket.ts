@@ -12,8 +12,9 @@ export const useObsWebSocket = () => {
   const [elements, setElements] = useState<MediaElement[]>([]);
 
   useEffect(() => {
-    // Conectar al WebSocket
-    const socket = new WebSocket(`ws://${location.host}/ws/editor`);
+    // Conectar al WebSocket (usar wss:// en HTTPS, ws:// en HTTP)
+    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(`${protocol}//${location.host}/ws/editor`);
     ws.current = socket;
 
     socket.onopen = () => {
