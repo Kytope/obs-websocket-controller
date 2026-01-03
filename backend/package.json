@@ -31,7 +31,9 @@
     "pg": "^8.16.3",
     "uuid": "^13.0.0",
     "ws": "^8.18.3",
-    "zod": "^4.3.4"
+    "zod": "^4.3.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
@@ -47,8 +49,6 @@
     "@typescript-eslint/eslint-plugin": "^8.51.0",
     "@typescript-eslint/parser": "^8.51.0",
     "eslint": "^9.39.2",
-    "nodemon": "^3.1.11",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "nodemon": "^3.1.11"
   }
 }
