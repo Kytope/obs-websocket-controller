@@ -1,0 +1,47 @@
+# Dependencias
+node_modules/
+*/node_modules/
+
+# Variables de entorno
+.env
+.env.local
+.env.production
+backend/.env
+
+# Archivos de build
+dist/
+build/
+*/dist/
+*/build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Base de datos SQLite
+*.db
+*.sqlite
+*.sqlite3
+backend/database.db
+
+# Archivos de media subidos (opcional, depende si quieres commitearlos)
+backend/media/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Temporal
+.tmp/
+temp/
