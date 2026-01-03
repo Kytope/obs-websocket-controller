@@ -49,7 +49,8 @@ if (config.nodeEnv === 'production') {
   app.use(express.static(frontendPath));
 
   // Todas las rutas no API deben servir el index.html (para React Router)
-  app.get('*', (_req: Request, res: Response) => {
+  // Express 5 requiere usar app.use en lugar de app.get('*')
+  app.use((_req: Request, res: Response) => {
     res.sendFile(path.join(frontendPath, 'index.html'));
   });
 }
